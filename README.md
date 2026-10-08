@@ -8,16 +8,14 @@ One BIP39 seed backs both Bitcoin and Liquid. No node, no custodian for keys.
 
 ## Installation
 
-### Install the skill
+Two independent pieces. You need both.
 
-```bash
-npx skills add jan3dev/agentic-aqua-skill
-```
+| | What it is | Without it |
+|---|---|---|
+| **1. The skill** | This repo — markdown that teaches the agent how to drive AQUA | The agent has the wallet but no idea how to use it safely |
+| **2. The `aqua` CLI** | The actual wallet ([jan3dev/agentic-aqua](https://github.com/jan3dev/agentic-aqua)) | The agent knows the commands but they do not exist |
 
-Works on Claude Code, Cursor, Codex, OpenCode and any other host the open
-`skills` registry supports. Idempotent — safe to re-run.
-
-### Or let an agent bootstrap everything
+### Quickest path — let an agent do both
 
 Paste this into any agent that can run shell commands:
 
@@ -25,9 +23,107 @@ Paste this into any agent that can run shell commands:
 Install Agentic AQUA by following https://raw.githubusercontent.com/jan3dev/agentic-aqua-skill/main/setup.md
 ```
 
-The agent reads [`setup.md`](./setup.md), installs the `aqua` CLI, optionally
-registers the MCP server with its host, and then installs this skill locally so
-the URL is never needed again.
+The agent reads [`setup.md`](./setup.md), installs the CLI, optionally registers
+the MCP server with its host, then installs this skill locally so the URL is
+never needed again.
+
+### 1. Install the skill
+
+```bash
+npx skills add jan3dev/agentic-aqua-skill
+```
+
+Idempotent — safe to re-run.
+
+**Scope.** Project by default, so the skill only loads inside that repo. Add
+`-g` to install for your user and have it available everywhere:
+
+```bash
+npx skills add jan3dev/agentic-aqua-skill -g
+```
+
+| Scope | Lands in |
+|---|---|
+| project (default) | `./.claude/skills/` (per-agent equivalent) |
+| global (`-g`) | `~/.claude/skills/` (per-agent equivalent) |
+
+**Agent.** The CLI detects what you have installed. Target specific agents with
+`-a`, repeatable:
+
+```bash
+npx skills add jan3dev/agentic-aqua-skill -a claude-code -a cursor
+```
+
+Supported: `claude-code`, `cursor`, `codex`, `opencode`, `cline`, `openhands`,
+`roo`.
+
+**Manual install**, if you would rather not run `npx`. Copy the skill directory
+into the agent's skills folder:
+
+```bash
+git clone https://github.com/jan3dev/agentic-aqua-skill.git
+cp -r agentic-aqua-skill/agentic-aqua ~/.claude/skills/
+```
+
+Adjust the destination for your agent — Cursor, Codex and OpenCode each use
+their own path.
+
+**Verify:**
+
+```bash
+npx skills list
+```
+
+The skill loads on the agent's next session. Only its `description` stays in
+context; the agent opens `SKILL.md` and a single reference file when a request
+actually matches.
+
+### 2. Install the `aqua` CLI
+
+Requires **Python 3.13**. `uv` handles that for you:
+
+```bash
+# uv, if missing
+curl -LsSf https://astral.sh/uv/install.sh | sh          # macOS / Linux
+powershell -c "irm https://astral.sh/uv/install.ps1 | iex" # Windows
+
+uv tool install --python 3.13 agentic-aqua
+aqua doctor
+```
+
+That is enough — the skill is written entirely in CLI terms.
+
+**Optionally** register the MCP server. Resolve the absolute path first, because
+MCP hosts do not read your shell PATH:
+
+```bash
+which agentic-aqua
+claude mcp add agentic-aqua --scope user -- /full/path/to/agentic-aqua
+```
+
+Other hosts use their own config with the same `command` + `args` shape. See
+[install.md](./agentic-aqua/references/install.md).
+
+### Updating and removing
+
+```bash
+npx skills update agentic-aqua      # the skill
+npx skills remove agentic-aqua
+
+uv tool upgrade agentic-aqua        # the CLI
+uv tool uninstall agentic-aqua
+```
+
+Uninstalling the CLI leaves `~/.aqua/` in place — wallets, config and swap
+records survive.
+
+### Try it
+
+Ask the agent:
+
+> What's my AQUA wallet balance?
+
+If it reaches for `aqua balance`, both pieces are wired up.
 
 ## Example agent prompts
 
